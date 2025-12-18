@@ -64,7 +64,7 @@ namespace Mediapipe.Tasks.Vision.FaceLandmarker
     public static FaceLandmarker CreateFromModelPath(string modelPath, GpuResources gpuResources = null)
     {
       var baseOptions = new Tasks.Core.BaseOptions(modelAssetPath: modelPath);
-      var options = new FaceLandmarkerOptions(baseOptions, runningMode: Core.RunningMode.IMAGE);
+      var options = new FaceLandmarkerOptions(baseOptions, runningMode: Core.RunningMode.IMAGE, outputFaceTransformationMatrixes: true);
       return CreateFromOptions(options, gpuResources);
     }
 

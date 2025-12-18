@@ -163,6 +163,16 @@ namespace Mediapipe.Unity.Sample.FaceLandmarkDetection
             if (headTracker != null && result.faceLandmarks != null && result.faceLandmarks.Count > 0)
             {
                 headTracker.UpdateHeadPosition(result.faceLandmarks[0].landmarks);
+                if (result.facialTransformationMatrixes != null && result.facialTransformationMatrixes.Count > 0)
+                {
+                    // Pass the matrix to your tracker
+                    headTracker.UpdateHeadRotation(result.facialTransformationMatrixes[0]);
+                }
+                else
+                {
+                    // Optional: Debug if matrix is missing
+                    // Debug.LogWarning("No Transformation Matrix found in result!");
+                }
             }
         }
     }

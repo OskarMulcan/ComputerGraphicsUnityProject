@@ -47,36 +47,29 @@ public class MediaPipeHeadTracker : MonoBehaviour
         _targetPos = new Vector3(x, y, -zDepth);
     }
 
-    public void UpdateHeadRotation(List<float> mpMatrix)
+    public float rotationWeight = 0.5f; 
+    public void UpdateHeadRotation(Matrix4x4 unityMatrix)
     {
-        if (mpMatrix == null || mpMatrix.Count < 16)
-        {
-            Debug.LogWarning("Invalid rotation matrix received.");
-            return;
-        }
+        // We no longer need to check for null or build the matrix manually!
+        // The plugin has already done the heavy lifting.
 
-        Matrix4x4 unityMatrix = new Matrix4x4();
-
-        // Column 0 (X-axis basis)
-        unityMatrix.m00 = mpMatrix[0]; unityMatrix.m10 = mpMatrix[1]; unityMatrix.m20 = mpMatrix[2];
-
-        // Column 1 (Y-axis basis)
-        unityMatrix.m01 = mpMatrix[4]; unityMatrix.m11 = mpMatrix[5]; unityMatrix.m21 = mpMatrix[6];
-
-        // Column 2 (Z-axis basis)
-        unityMatrix.m02 = mpMatrix[8]; unityMatrix.m12 = mpMatrix[9]; unityMatrix.m22 = mpMatrix[10];
-
-        // Column 3 (Translation) and Row 3 (Perspective)
-        unityMatrix.m33 = 1;
+        // 1. Extract the rotation directly from the Unity Matrix
         Quaternion targetRotation = unityMatrix.rotation;
 
+        // 2. Apply the Coordinate System Correction
+        // We still need to flip the axes because head tracking often feels "inverted" 
+        // without these negations (depending on if it's a mirror view or direct view).
         Vector3 euler = targetRotation.eulerAngles;
 
-        euler.x = -euler.x;
-        euler.y = -euler.y;
-        euler.z = -euler.z;
+        euler.x = -euler.x; // Pitch
+        euler.y = -euler.y; // Yaw
+        euler.z = -euler.z; // Roll
 
         targetRotation = Quaternion.Euler(euler);
+        targetRotation = Quaternion.Slerp(Quaternion.identity, targetRotation, rotationWeight);
+
+
+        // 3. Set the target for smoothing
         _targetRot = targetRotation;
     }
 
