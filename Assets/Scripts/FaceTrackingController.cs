@@ -1,4 +1,4 @@
-﻿using Mediapipe;
+using Mediapipe;
 using Mediapipe.Unity;
 using System.Collections.Generic;
 using UnityEngine;
@@ -11,12 +11,13 @@ public class MediaPipeHeadTracker : MonoBehaviour
     private Quaternion _targetRot;
 
     [Header("Configuration")]
-    public float smoothing = 10f;
-    public float sensitivity = 1.5f;
+    public float smoothing = 2f;
+    public float sensitivity = 2f;
+    public float z_sensitivity = 2f;
 
     [Header("Physical Setup (Estimated)")]
     public float estimatedIPD = 0.065f;
-    public float webcamFov = 60f;
+    public float webcamFov = 70f;
     public Vector3 HeadPosition { get; private set; }
 
     private Vector3 _targetPos;
@@ -31,23 +32,26 @@ public class MediaPipeHeadTracker : MonoBehaviour
         if (landmarks == null || landmarks.Count == 0) return;
 
         var nose = landmarks[1];
-        var leftEye = landmarks[33];
-        var rightEye = landmarks[263];
+        var leftEye = landmarks[468];
+        var rightEye = landmarks[473];
 
         float x = -(nose.x - 0.5f) * sensitivity;
         float y = (nose.y - 0.5f) * sensitivity;
 
         float eyeDistNorm = Vector2.Distance(new Vector2(leftEye.x, leftEye.y), new Vector2(rightEye.x, rightEye.y));
+        
 
         float focalLen = 1.0f / Mathf.Tan(webcamFov * 0.5f * Mathf.Deg2Rad);
-        float zDepth = (estimatedIPD * focalLen) / eyeDistNorm;
+        float zDepth = -(estimatedIPD * focalLen) / eyeDistNorm * z_sensitivity;
 
-        zDepth = Mathf.Clamp(zDepth, 0.2f, 1.5f);
+        //zDepth = Mathf.Clamp(zDepth, 0.2f, 8f);
+        //zDepth = Mathf.Clamp(zDepth, -0f, -0.2f);
+
         Debug.Log($"Landmarks updating! Nose X: {landmarks[1].x}, Y: {landmarks[1].y}");
-        _targetPos = new Vector3(x, y, -zDepth);
+        _targetPos = new Vector3(x, y, zDepth*20);
     }
 
-    public float rotationWeight = 0.5f; 
+    public float rotationWeight = 0.5f;
     public void UpdateHeadRotation(Matrix4x4 unityMatrix)
     {
         // We no longer need to check for null or build the matrix manually!
@@ -76,7 +80,7 @@ public class MediaPipeHeadTracker : MonoBehaviour
     void Update()
     {
         HeadPosition = Vector3.Lerp(HeadPosition, _targetPos, Time.deltaTime * smoothing);
-        HeadRotation = Quaternion.Slerp(HeadRotation, _targetRot, Time.deltaTime * smoothing);
+        //HeadRotation = Quaternion.Slerp(HeadRotation, _targetRot, Time.deltaTime * smoothing);
         if (HeadPosition.sqrMagnitude > 0.0001f)
         {
             Debug.Log($"[TRACKER OUTPUT] Pos: {HeadPosition} | Rot: {HeadRotation.eulerAngles}");
